@@ -29,10 +29,6 @@ import pickle
 parser = argparse.ArgumentParser(description='Bridge between CARLA and openpilot.')
 parser.add_argument('--joystick', action='store_true')
 parser.add_argument('--low_quality', action='store_true')
-# parser.add_argument('--town', type=str, default='Town04_Opt')
-# parser.add_argument('--spawn_point', dest='num_selected_spawn_point',
-#         type=int, default=16)
-# parser.add_argument('--lead_dist', type=int, default=20)
 
 args = parser.parse_args()
 
@@ -96,16 +92,8 @@ radar_points = np.empty((0, 4), float)
 def radar_callback(radar_data):
   global radar_points
   for detect in radar_data:
-    # print('radar altitude: ', detect.altitude)
-    # print('radar azimuth: ', detect.azimuth)
-    # print('radar depth: ', detect.depth)
-    # print('radar velocity: ', detect.velocity)
-    # np.append(radar_points, np.array([[detect.altitude, detect.azimuth, detect.depth, detect.velocity]]), axis=0)
     detect_array = np.array([[detect.altitude, detect.azimuth, detect.depth, detect.velocity]])
     radar_points = np.vstack([radar_points, detect_array])
-    # print(radar_points.shape)
-  # print(f'******  ******')
-  # print(radar_points)
 
 def imu_callback(imu, vehicle_state):
   vehicle_state.bearing_deg = math.degrees(imu.compass)
@@ -206,12 +194,10 @@ def can_function_runner(vs: VehicleState, exit_event: threading.Event):
       can_function(pm, vs.speed, vs.angle, i, vs.cruise_button, vs.is_engaged, None)
     else:
       # process radar points
-      # print(radar_points / [math.radians(10), math.radians(17.5), 256.0, 35.0])
       radar_points_clustering = DBSCAN(eps=0.5, min_samples=5).fit(radar_points / [math.radians(10), math.radians(17.5), 256.0, 35.0]) # normalize data points
       # print(radar_points_clustering.labels_)
       radar_points_clustering_centroids = np.zeros((16, 4), float) #+ np.array([[255.5, 0.0, 0.0]])
       radar_points_clustering_label_counts = np.zeros((16, 1), int)
-      # print(radar_point_centroids)
       # sum all tracks
       for idx, track_id in enumerate(radar_points_clustering.labels_):
         if track_id != -1 and track_id < 16:
@@ -221,7 +207,6 @@ def can_function_runner(vs: VehicleState, exit_event: threading.Event):
       for idx, radar_point in enumerate(radar_points_clustering_centroids):
         if radar_points_clustering_label_counts[idx] != 0:
           radar_points_clustering_centroids[idx] = radar_point / radar_points_clustering_label_counts[idx]
-      # print(radar_points_clustering_centroids)
       # calculate longitudinal_dist, lateral_dist, and relative_velocity
       radar_can_message = np.zeros((16, 3), float)
       for idx, radar_point_centroid in enumerate(radar_points_clustering_centroids):
@@ -231,10 +216,7 @@ def can_function_runner(vs: VehicleState, exit_event: threading.Event):
           radar_can_message[idx, 0] = math.cos(radar_point_centroid[0]) * math.cos(radar_point_centroid[1]) * radar_point_centroid[2] # radar_longitudinal_distance_offset # longitudinal distance 
           radar_can_message[idx, 1] = math.cos(radar_point_centroid[0]) * math.sin(radar_point_centroid[1]) * radar_point_centroid[2] # lateral distance
           radar_can_message[idx, 2] = radar_point_centroid[3] # relative velocity
-      # print(radar_can_message)
       can_function(pm, vs.speed, vs.angle, i, vs.cruise_button, vs.is_engaged, radar_can_message)
-      # print("longDist: ", radar_can_message[0:2, 0])
-      # print("vRel: ", radar_can_message[:, 2] * ms_to_mph)
       radar_points = np.empty((0, 4), float)
   
     time.sleep(0.01)
@@ -316,7 +298,6 @@ def bridge(q, world, initial_waypoint, lead_distance, sv_initial_v, lv_initial_v
   # add radar (reference: https://carla.readthedocs.io/en/latest/tuto_G_retrieve_data/#radar-sensor)
   radar_bp = blueprint_library.find('sensor.other.radar')
   radar_bp.set_attribute('horizontal_fov', str(35)) # 35
-  # radar_bp.set_attribute('vertical_fov', str(20))
   radar_bp.set_attribute('range', str(256)) # 174
   radar_location = carla.Location(x=vehicle.bounding_box.extent.x, z=1.0)
   radar_rotation = carla.Rotation()
@@ -368,9 +349,6 @@ def bridge(q, world, initial_waypoint, lead_distance, sv_initial_v, lv_initial_v
   openpilot_enable_check = 0
   openpilot_enabled = True
   openpilot_retry_flag = False
-
-  # spectator = world.get_spectator()   # spectator for observing objects in the world
-  # spectator.set_transform(camera.get_transform())    # set the spectator to observe the vehicle
 
   # lv_initial_waypoint = []
   lv_v_prev = lv_initial_v
@@ -673,44 +651,6 @@ def bridge_keep_alive(q: Any):
         pickle.dump(collisions, p)
       with open(PATH + f'traj{idx}.pkl', 'wb') as p:
         pickle.dump(traj, p)
-  # for i in range(50):
-  #   if error_flag:
-  #     break
-  #   collisions = []
-  #   collision_count = 0
-  #   safe_scenarios = []
-  #   traj = {}
-  #   for idx, s0 in enumerate(s0s):
-  #     # if idx not in [4, 5, 6, 7, 8, 9, 11, 13, 15, 17]:
-  #     if idx not in [5, 6, 7, 9, 17]:
-  #       continue
-  #     print(f"***starting new scenario[{idx}]...lead distance {s0[0]}; sv speed {s0[1]}; lv speed {s0[2]}; lv brake {s0[3]}")
-  #     try:
-  #       collision_flag = False
-  #       sv_v, lv_v, dhw, collision, openpilot_enabled = bridge(q, world, waypoints[45], s0[0], s0[1], s0[2], s0[3])
-  #       while not openpilot_enabled:
-  #         print("failed to enable Openpilot. Retrying...")
-  #         collision_flag = False
-  #         sv_v, lv_v, dhw, collision, openpilot_enabled = bridge(q, world, waypoints[45], s0[0], s0[1], s0[2], s0[3])
-  #       collisions.append(collision)
-  #       if collision:
-  #         collision_count += 1
-  #       else:
-  #         safe_scenarios.append(idx)
-  #       traj[f'sv_v{idx}'] = sv_v[::10]
-  #       traj[f'lv_v{idx}'] = lv_v[::10]
-  #       traj[f'dhw{idx}'] = dhw[::10]
-  #     except RuntimeError:
-  #       error_flag = True
-  #       break
-  #   if not error_flag:
-  #     results[f'run{i}'] = collisions
-  #     print(f'Run [{i}]: collision rate->{collision_count/len(s0s)}')
-  #     print(f'Non-collision scenario: {safe_scenarios}')
-  #     with open(PATH + 'result.pkl', 'wb') as p:
-  #       pickle.dump(results, p)
-  #     with open(PATH + f'traj{i}.pkl', 'wb') as p:
-  #       pickle.dump(traj, p)
   if error_flag:
     print("Quit due to error")
   else:
