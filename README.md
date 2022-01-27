@@ -33,6 +33,6 @@ References
 
 [2] Weng et al. [2021b] (https://ieeexplore.ieee.org/document/9594685)
 
-[3] add radar paper to here
+[3] Zhong et al. Detecting Safety Problems of Multi-Sensor Fusion in Autonomous Driving (https://arxiv.org/pdf/2109.06404.pdf)
 
-[4] add the comma.ai blog post to here
+[4] What are the limitations of openpilot Adaptive Cruise Control? (https://comma.ai/vehicles)
