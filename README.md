@@ -1,4 +1,6 @@
-# Delta Covering Openpilot
+# Openpilot in Carla
+
+This repository provides the [Openpilot](https://github.com/commaai/openpilot) confiuration to integrate with [Carla](https://carla.org/). The setup was originally implemented for safety evaluation purposes using the <img src="https://latex.codecogs.com/svg.image?\bg_white&space;\epsilon\delta" title="\bg_white \epsilon\delta" />-almost safe set based methods, but should also be applicable for other purposes. The code base is built upon the [original Opepilot-Carla integration](https://github.com/commaai/openpilot/tree/master/tools/sim) from comma.ai with added Radar inputs to enhance the stack's performance. 
 
 Environments
 -----------------------
@@ -30,3 +32,7 @@ References
 [1] Weng et al. [2021a] (https://ieeexplore.ieee.org/document/9556594)
 
 [2] Weng et al. [2021b] (https://ieeexplore.ieee.org/document/9594685)
+
+[3] add radar paper to here
+
+[4] add the comma.ai blog post to here
