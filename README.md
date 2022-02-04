@@ -37,3 +37,5 @@ References
 [3] Zhong et al. Detecting Safety Problems of Multi-Sensor Fusion in Autonomous Driving (https://arxiv.org/pdf/2109.06404.pdf)
 
 [4] What are the limitations of openpilot Adaptive Cruise Control? (https://comma.ai/vehicles)
+
+[5] The EURO NCAP AEB C2C Test Protocal (https://cdn.euroncap.com/media/56143/euro-ncap-aeb-c2c-test-protocol-v302.pdf)
