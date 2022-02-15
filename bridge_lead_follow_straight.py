@@ -197,7 +197,7 @@ def can_function_runner(vs: VehicleState, exit_event: threading.Event):
     else:
       # process radar points
       radar_points_clustering = DBSCAN(eps=0.5, min_samples=5).fit(radar_points / [math.radians(10), math.radians(17.5), 256.0, 35.0]) # normalize data points
-      radar_points_clustering_centroids = np.zeros((16, 4), float) #+ np.array([[255.5, 0.0, 0.0]])
+      radar_points_clustering_centroids = np.zeros((16, 4), float)
       radar_points_clustering_label_counts = np.zeros((16, 1), int)
       # sum all tracks
       for idx, track_id in enumerate(radar_points_clustering.labels_):
@@ -254,10 +254,8 @@ def bridge(q, world, initial_waypoint, lead_distance, sv_initial_v, lv_initial_v
       attempt_count += 1
       sv_spawn_point.location.z += 0.01
       vehicle = world.spawn_actor(vehicle_bp, sv_spawn_point)
-      # print(f"successfully spawn subject vehicle in [{attempt_count}] attempts")
       break
     except RuntimeError:
-      # print(f"Attempt[{attempt_count}] - Unable to spawn Subject Vehicle")
       pass
 
   lv_initial_waypoint = sv_initial_waypoint.next(lead_distance + vehicle.bounding_box.extent.x + lead_vehicle.bounding_box.extent.x + sv_initial_v*2)[0]
@@ -266,11 +264,8 @@ def bridge(q, world, initial_waypoint, lead_distance, sv_initial_v, lv_initial_v
   
   max_steer_angle = vehicle.get_physics_control().wheels[0].max_steer_angle
 
-  # make tires less slippery
-  # wheel_control = carla.WheelPhysicsControl(tire_friction=5)
   physics_control = vehicle.get_physics_control()
   physics_control.mass = 2326
-  # physics_control.wheels = [wheel_control]*4
   physics_control.torque_curve = [[20.0, 500.0], [5000.0, 500.0]]
   physics_control.gear_switch_time = 0.0
   vehicle.apply_physics_control(physics_control)
@@ -297,8 +292,8 @@ def bridge(q, world, initial_waypoint, lead_distance, sv_initial_v, lv_initial_v
 
   # add radar (reference: https://carla.readthedocs.io/en/latest/tuto_G_retrieve_data/#radar-sensor)
   radar_bp = blueprint_library.find('sensor.other.radar')
-  radar_bp.set_attribute('horizontal_fov', str(35)) # 35
-  radar_bp.set_attribute('range', str(256)) # 174
+  radar_bp.set_attribute('horizontal_fov', str(35))
+  radar_bp.set_attribute('range', str(256))
   radar_location = carla.Location(x=vehicle.bounding_box.extent.x, z=1.0)
   radar_rotation = carla.Rotation()
   radar_transform = carla.Transform(radar_location, radar_rotation)
@@ -342,7 +337,7 @@ def bridge(q, world, initial_waypoint, lead_distance, sv_initial_v, lv_initial_v
 
   # add delay to wait for op to be fully started
   auto_start_counter = 0
-  auto_start_threshold = 50 # 200 was good
+  auto_start_threshold = 50
   auto_start_finished = False
   lead_vehicle_added = False
   lead_vehicle_stopped = False
@@ -366,7 +361,6 @@ def bridge(q, world, initial_waypoint, lead_distance, sv_initial_v, lv_initial_v
     # 3. Send current carstate to op via can
       
     if collision_flag:
-      print(f"Collision!!!!!! Distance headway: {dhw[-1]}m")
       break
 
     cruise_button = 0
@@ -389,7 +383,6 @@ def bridge(q, world, initial_waypoint, lead_distance, sv_initial_v, lv_initial_v
       lead_vehicle_added = True
       cruise_button = CruiseButtons.DECEL_SET
       is_openpilot_engaged = True
-      print("Enabling OpenPilot...")
       vehicle.disable_constant_velocity()
     elif lead_vehicle_added and not lead_vehicle_stopped and math.isclose(vc.throttle, 0.0) and math.isclose(vc.brake, 0.0):
       openpilot_enabled = False
@@ -403,7 +396,6 @@ def bridge(q, world, initial_waypoint, lead_distance, sv_initial_v, lv_initial_v
         lead_vehicle.set_transform(lv_waypoint_cur.transform)
 
       if math.isclose(vehicle_state.speed, 0.0):
-        print('Subject vehicle fully stopped')
         break
 
       sv_v.append(vehicle_state.speed)
@@ -444,17 +436,12 @@ def bridge(q, world, initial_waypoint, lead_distance, sv_initial_v, lv_initial_v
       steer_out = steer_manual * steer_manual_multiplier
       brake_out = brake_manual * brake_manual_multiplier
 
-      #steer_out = steer_out
-      # steer_out = steer_rate_limit(old_steer, steer_out)
       old_steer = steer_out
       old_throttle = throttle_out
       old_brake = brake_out
 
-      # print('message',old_throttle, old_steer, old_brake)
-
     if is_openpilot_engaged:
       sm.update(0)
-      # TODO gas and brake is deprecated
       throttle_op = clip(sm['carControl'].actuators.accel/1.6, 0.0, 1.0)
       brake_op = clip(-sm['carControl'].actuators.accel/4.0, 0.0, 1.0)
       steer_op = sm['carControl'].actuators.steeringAngleDeg
@@ -513,10 +500,6 @@ def bridge(q, world, initial_waypoint, lead_distance, sv_initial_v, lv_initial_v
     vehicle_state.cruise_button = cruise_button
     vehicle_state.is_engaged = is_openpilot_engaged
 
-    if rk.frame%PRINT_DECIMATION == 0:
-      # print("frame: ", "engaged:", is_openpilot_engaged, "; throttle: ", round(vc.throttle, 3), "; steer(c/deg): ", round(vc.steer, 3), round(steer_out, 3), "; brake: ", round(vc.brake, 3))
-      pass
-
     rk.keep_time()
 
   # Clean up resources in the opposite order they were created.
@@ -535,10 +518,7 @@ def bridge(q, world, initial_waypoint, lead_distance, sv_initial_v, lv_initial_v
 
 def filter_waypoint(world):
   waypoints = world.get_map().generate_waypoints(distance=5.0)
-  print(f'number of waypoint: {len(waypoints)}')
-  # road_ids = set([38, 49, 1072, 1400])
   road_ids = set([40, 48, 1091])
-  # road_ids = set([46])
   lane_ids = {
       38: -1, 
       40: 1,
@@ -553,7 +533,6 @@ def filter_waypoint(world):
   for wp in waypoints:
     if wp.road_id in road_ids and lane_ids[wp.road_id] * wp.lane_id > 0:
         filtered_waypoints.append(wp)
-  print(f'number of filtered waypoints: {len(filtered_waypoints)}')
   return filtered_waypoints
 
 def bridge_keep_alive(q: Any):
@@ -563,7 +542,6 @@ def bridge_keep_alive(q: Any):
   client = carla.Client('localhost', 2000)
   client.set_timeout(10.0)
   world = client.load_world('Town04')
-  # world.set_weather(carla.WeatherParameters.WetCloudySunset)
   if args.low_quality:
     world.unload_map_layer(carla.MapLayer.Foliage)
     world.unload_map_layer(carla.MapLayer.Buildings)
@@ -579,12 +557,10 @@ def bridge_keep_alive(q: Any):
   i = 0
   while not done:
     s0 = SDQ.get_s0()
-    print(f"***starting new scenario...lead distance {s0[0]}; sv speed {s0[1]}; lv speed {s0[2]}")
     try:
       collision_flag = False
       sv_v, lv_v, dhw, collision, openpilot_enabled = bridge(q, world, waypoints[45], s0[0], s0[1], s0[2])
       while not openpilot_enabled:
-        print("failed to enable Openpilot. Retrying...")
         collision_flag = False
         sv_v, lv_v, dhw, collision, openpilot_enabled = bridge(q, world, waypoints[45], s0[0], s0[1], s0[2])
       traj = np.array([dhw[::10], sv_v[::10], lv_v[::10]]).T
@@ -604,11 +580,9 @@ def bridge_keep_alive(q: Any):
           ax.plot(Du.T[0], Du.T[1],"r.")
         plt.savefig(PATH+str(i)+".png")
         plt.close("all")
-        # save_all(PATH, i, SDQ)
         SDQ.save('data/lead_follow/delta_covering/')
       i += 1
     except RuntimeError:
-      print("Restarting bridge...")
       break
   if done:
     SDQ.save('data/lead_follow/delta_covering/')
