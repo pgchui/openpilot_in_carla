@@ -40,3 +40,16 @@ References
 [4] What are the limitations of openpilot Adaptive Cruise Control? (https://comma.ai/vehicles)
 
 [5] The EURO NCAP AEB C2C Test Protocal (https://cdn.euroncap.com/media/56143/euro-ncap-aeb-c2c-test-protocol-v302.pdf)
+
+Citing
+------
+```
+@misc{weng2022formal,
+      title={A Formal Safety Characterization of Advanced Driver Assist Systems in the Car-Following Regime with Scenario-Sampling}, 
+      author={Bowen Weng and Minghao Zhu and Keith Redmill},
+      year={2022},
+      eprint={2202.08935},
+      archivePrefix={arXiv},
+      primaryClass={cs.RO}
+}
+```
